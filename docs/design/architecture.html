@@ -4,278 +4,617 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz IA — Architecture des modules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,300..700&family=Lora:wght@500;600;700&display=swap">
 <style>
+  /* ────────────────────────────────────────────────────────────
+     Charte reprise du rapport (thème Liora) :
+       fond blanc · titres serif · texte sans-serif · accent orange
+     Les schémas, eux, adoptent le tracé « à la main » d'Excalidraw.
+     ──────────────────────────────────────────────────────────── */
   :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#30363d;
-    --txt:#e6edf3; --muted:#8b949e;
-    --data:#3fb950; --prep:#58a6ff; --model:#bc8cff; --orch:#f0883e;
-    --api:#ff7b72; --front:#39c5cf; --gold:#e3b341;
-    --shadow:0 6px 22px rgba(0,0,0,.45);
+    color-scheme: light;
+    --paper:#ffffff;
+    --ink:#1a1a1a;          /* titres */
+    --body:#3f3f3f;         /* texte courant */
+    --muted:#767676;        /* légendes */
+    --rule:#e6e4e1;         /* filets discrets */
+    --accent:#d9480f;       /* orange du rapport */
+    --accent-dark:#b03608;
+    --accent-soft:#fbe9e0;  /* fond des puces pleines */
+
+    /* palette Excalidraw (traits + remplissages pastel) */
+    --ex-ink:#1e1e1e;
+    --ex-green:#b2f2bb;  --ex-green-s:#2f9e44;
+    --ex-blue:#a5d8ff;   --ex-blue-s:#1971c2;
+    --ex-violet:#d0bfff; --ex-violet-s:#6741d9;
+    --ex-orange:#ffd8a8; --ex-orange-s:#e8590c;
+    --ex-red:#ffc9c9;    --ex-red-s:#e03131;
+    --ex-cyan:#99e9f2;   --ex-cyan-s:#0c8599;
+
+    --serif:"Lora","Source Serif 4",Georgia,"Times New Roman",serif;
+    --sans:"DM Sans","Inter",-apple-system,"Segoe UI",system-ui,sans-serif;
+    --hand:"Caveat","Segoe Print","Comic Sans MS",cursive;
   }
   *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
   body{
-    margin:0; background:radial-gradient(1200px 600px at 50% -10%,#15203099,#0d1117);
-    color:var(--txt); font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
-    line-height:1.5; padding:32px 18px 80px;
+    margin:0; background:var(--paper); color:var(--body);
+    font-family:var(--sans); font-size:15px; line-height:1.62;
+    padding:0 20px 90px;
   }
-  header{max-width:1100px;margin:0 auto 28px;text-align:center}
-  header h1{font-size:1.9rem;margin:0 0 6px;letter-spacing:.3px}
-  header h1 span{background:linear-gradient(90deg,var(--model),var(--front));-webkit-background-clip:text;background-clip:text;color:transparent}
-  header p{color:var(--muted);margin:4px 0;font-size:.95rem}
-  .wrap{max-width:1100px;margin:0 auto}
+  .wrap{max-width:1120px;margin:0 auto}
 
-  /* legend */
-  .legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:18px 0 34px}
-  .legend span{display:inline-flex;align-items:center;gap:7px;font-size:.82rem;color:var(--muted)}
-  .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+  /* ── En-tête, calqué sur la page de garde du rapport ── */
+  .hero{padding:72px 0 34px;border-bottom:1px solid var(--rule);margin-bottom:52px}
+  .wordmark{font-family:var(--serif);font-weight:700;font-size:2rem;color:var(--accent);
+    letter-spacing:-.02em;margin:0 0 30px}
+  .wordmark sup{font-size:.5rem;vertical-align:super;font-weight:500}
+  .hero h1{font-family:var(--serif);font-weight:700;color:var(--ink);
+    font-size:clamp(1.9rem,4.2vw,2.9rem);line-height:1.18;letter-spacing:-.015em;margin:0 0 18px;max-width:16em}
+  .hero .lead{font-size:.95rem;color:var(--body);margin:0 0 22px;max-width:46em}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:.65rem;font-weight:500;letter-spacing:.09em;text-transform:uppercase;
+    padding:5px 10px;border-radius:3px;border:1px solid var(--accent);color:var(--accent-dark)}
+  .chip--fill{background:var(--accent-soft);border-color:transparent;color:#7d3110}
 
-  /* layer */
-  .layer{position:relative;margin:0 0 8px;padding:22px;border:1px solid var(--line);
-    border-radius:16px;background:linear-gradient(180deg,#161b22,#12161d);box-shadow:var(--shadow)}
-  .layer-title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.78rem;
-    text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:0 0 16px}
-  .layer-title .bar{width:4px;height:18px;border-radius:3px}
+  /* ── Sections ── */
+  section{margin:0 0 62px}
+  h2{font-family:var(--serif);font-weight:700;color:var(--ink);
+    font-size:clamp(1.45rem,2.8vw,2rem);line-height:1.25;letter-spacing:-.01em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 26px;max-width:52em}
 
-  .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
-  .mod{flex:1 1 200px;min-width:190px;max-width:300px;background:var(--panel2);
-    border:1px solid var(--line);border-top:3px solid var(--line);border-radius:12px;
-    padding:14px 16px;transition:.18s;position:relative}
-  .mod:hover{transform:translateY(-3px);border-color:#3d4654;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-  .mod h3{margin:0 0 6px;font-size:1rem;display:flex;align-items:center;gap:8px}
-  .mod .ico{font-size:1.15rem}
-  .mod p{margin:0;font-size:.82rem;color:var(--muted)}
-  .mod .tech{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px}
-  .tech b{font-size:.68rem;font-weight:600;background:#0d1117;border:1px solid var(--line);
-    color:#adbac7;padding:2px 7px;border-radius:20px}
+  /* ── Cadre des schémas ── */
+  .board{border:1px solid var(--rule);border-radius:14px;padding:22px 18px 16px;background:#fff}
+  .board svg{display:block;width:100%;height:auto}
+  .board .caption{font-size:.78rem;color:var(--muted);text-align:center;margin:14px 0 0}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin:20px 0 0;
+    padding-top:16px;border-top:1px solid var(--rule)}
+  .legend span{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted)}
+  .swatch{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--ex-ink);display:inline-block}
 
-  .t-data{border-top-color:var(--data)} .t-prep{border-top-color:var(--prep)}
-  .t-model{border-top-color:var(--model)} .t-orch{border-top-color:var(--orch)}
-  .t-api{border-top-color:var(--api)} .t-front{border-top-color:var(--front)}
+  /* ── Cartes de détail, style « objectifs » du rapport ── */
+  .layer{margin:0 0 42px}
+  .layer-head{display:flex;align-items:baseline;gap:12px;margin:0 0 20px}
+  .layer-num{font-family:var(--serif);font-size:1.6rem;font-weight:600;color:var(--accent);line-height:1}
+  .layer-head h3{font-family:var(--serif);font-size:1.2rem;font-weight:600;color:var(--ink);margin:0}
+  .layer-head .hint{font-size:.8rem;color:var(--muted);margin-left:auto;text-align:right}
+  .grid{display:grid;gap:30px 34px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card .ico{color:var(--ink);opacity:.75;display:block;margin:0 0 8px}
+  .card .bar{height:1.5px;background:var(--accent);margin:0 0 12px}
+  .card h4{font-family:var(--serif);font-weight:500;font-size:1.08rem;color:var(--ink);margin:0 0 7px;line-height:1.3}
+  .card p{margin:0;font-size:.87rem;color:var(--body)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0 0}
+  .tag{font-size:.68rem;color:#5c5c5c;background:#f7f6f4;border:1px solid var(--rule);
+    padding:2px 8px;border-radius:3px;white-space:nowrap}
+  code{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:.8em;
+    background:#f7f6f4;border:1px solid var(--rule);border-radius:3px;padding:1px 5px}
 
-  /* arrow between layers */
-  .arrow{display:flex;justify-content:center;margin:-2px 0;color:var(--muted)}
-  .arrow svg{width:26px;height:34px}
+  /* ── Boucles ── */
+  .loop{margin:0 0 34px}
+  .loop-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 4px}
+  .loop-head h4{font-family:var(--serif);font-weight:600;font-size:1.1rem;color:var(--ink);margin:0}
+  .badge{font-size:.65rem;font-weight:500;letter-spacing:.09em;text-transform:uppercase;
+    padding:4px 9px;border-radius:3px;background:var(--accent-soft);color:#7d3110}
+  .loop p.note{margin:0 0 14px;font-size:.85rem;color:var(--muted)}
 
-  /* branch labels */
-  .branch-tag{position:absolute;top:-11px;left:18px;font-size:.66rem;font-weight:700;
-    letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;
-    background:var(--panel);border:1px solid var(--line)}
+  /* ── Encadré de clôture ── */
+  .callout{border-left:3px solid var(--accent);background:#fdf7f3;padding:18px 22px;border-radius:0 6px 6px 0}
+  .callout p{margin:0;font-size:.9rem;color:var(--body)}
+  .callout strong{color:var(--ink)}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
+    font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
-  /* loop banners */
-  .loop{display:flex;gap:14px;flex-wrap:wrap;margin:30px 0 8px}
-  .loop-card{flex:1 1 300px;border-radius:14px;padding:16px 18px;border:1px solid var(--line)}
-  .loop-daily{background:linear-gradient(135deg,#0f2a1b,#12161d);border-color:#1f6f3e}
-  .loop-train{background:linear-gradient(135deg,#2a1f0f,#12161d);border-color:#8a5a1f}
-  .loop-card h3{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}
-  .loop-card .freq{font-size:.72rem;font-weight:700;letter-spacing:.5px;padding:2px 9px;border-radius:20px}
-  .loop-daily .freq{background:#16331f;color:var(--data);border:1px solid #1f6f3e}
-  .loop-train .freq{background:#33260f;color:var(--gold);border:1px solid #8a5a1f}
-  .loop-card ol{margin:10px 0 0;padding-left:18px;font-size:.82rem;color:var(--muted)}
-  .loop-card ol li{margin:3px 0}
-  .loop-card .cost{margin-top:10px;font-size:.78rem;color:var(--txt)}
+  /* ── Typographie manuscrite des schémas ── */
+  .dia-t{font-family:var(--hand);font-size:21px;font-weight:600;fill:var(--ex-ink)}
+  .dia-s{font-family:var(--hand);font-size:16px;font-weight:500;fill:#3d3d3d}
+  .dia-l{font-family:var(--hand);font-size:16px;font-weight:500;fill:#6b6b6b}
+  .dia-n{font-family:var(--hand);font-size:15px;font-weight:600;fill:#8a8a8a}
 
-  .note{text-align:center;color:var(--muted);font-size:.82rem;margin:26px auto 0;max-width:760px}
-  .pill{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:#adbac7;margin:0 2px}
+  @media (max-width:640px){
+    .hero{padding:48px 0 28px}
+    .layer-head .hint{display:none}
+  }
+  @media print{
+    body{padding:0}
+    .board,.card,.callout{break-inside:avoid}
+    .hero{padding-top:0}
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Quiz IA — <span>Architecture des modules</span></h1>
-  <p>Du jeu de données à l'intégration de l'API dans le frontend</p>
-  <p style="font-size:.8rem">Projet de fin d'étude · pipeline MLOps de génération + scoring d'idées de quiz vidéo virales bilingues (FR/EN)</p>
-</header>
+<!-- Filtres de déformation : ils donnent aux tracés le rendu « à main levée »
+     d'Excalidraw. Appliqués UNIQUEMENT aux formes, jamais au texte. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <filter id="sketch-a" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.021" numOctaves="3" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.1" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="sketch-b" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="23" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="sketch-c" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" seed="41" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.8" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</defs></svg>
 
 <div class="wrap">
 
-  <div class="legend">
-    <span><i class="dot" style="background:var(--data)"></i>Données</span>
-    <span><i class="dot" style="background:var(--prep)"></i>Préparation</span>
-    <span><i class="dot" style="background:var(--model)"></i>Modélisation</span>
-    <span><i class="dot" style="background:var(--orch)"></i>Orchestration</span>
-    <span><i class="dot" style="background:var(--api)"></i>API</span>
-    <span><i class="dot" style="background:var(--front)"></i>Frontend</span>
+<header class="hero">
+  <p class="wordmark">Liora<sup>®</sup></p>
+  <h1>Quiz IA — Architecture des modules</h1>
+  <p class="lead">Du jeu de données brut à l'intégration de l'API dans l'application de production :
+    les sept couches du système, les modèles qu'elles portent et les deux boucles qui les font tourner
+    sans intervention manuelle.</p>
+  <div class="chips">
+    <span class="chip chip--fill">Projet de fin d'études</span>
+    <span class="chip">Data Science</span>
+    <span class="chip">Pipeline MLOps · RAG · LightGBM</span>
+  </div>
+</header>
+
+<!-- ══════════════ 1. VUE D'ENSEMBLE ══════════════ -->
+<section>
+  <h2>Vue d'ensemble</h2>
+  <p class="sub">Le flux se lit de gauche à droite sur la rangée du haut, puis de droite à gauche sur
+    celle du bas. La flèche en pointillés referme le circuit : chaque matin, l'orchestrateur relance la
+    chaîne depuis la collecte.</p>
+
+  <div class="board">
+    <svg viewBox="0 0 1120 500" role="img" aria-label="Schéma des sept couches du système, de la collecte des données au frontend">
+
+      <!-- formes (déformées) -->
+      <g filter="url(#sketch-a)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="30"  y="64"  width="220" height="94" rx="10" fill="var(--ex-green)"  stroke="var(--ex-green-s)"  stroke-width="2.2"/>
+        <rect x="310" y="64"  width="220" height="94" rx="10" fill="var(--ex-blue)"   stroke="var(--ex-blue-s)"   stroke-width="2.2"/>
+        <rect x="590" y="64"  width="220" height="94" rx="10" fill="var(--ex-blue)"   stroke="var(--ex-blue-s)"   stroke-width="2.2"/>
+        <rect x="870" y="64"  width="220" height="94" rx="10" fill="var(--ex-violet)" stroke="var(--ex-violet-s)" stroke-width="2.2"/>
+        <rect x="870" y="254" width="220" height="94" rx="10" fill="var(--ex-orange)" stroke="var(--ex-orange-s)" stroke-width="2.2"/>
+        <rect x="590" y="254" width="220" height="94" rx="10" fill="var(--ex-red)"    stroke="var(--ex-red-s)"    stroke-width="2.2"/>
+        <rect x="310" y="254" width="220" height="94" rx="10" fill="var(--ex-cyan)"   stroke="var(--ex-cyan-s)"   stroke-width="2.2"/>
+
+        <g stroke="var(--ex-ink)" stroke-width="2.2">
+          <!-- rangée du haut, vers la droite -->
+          <path d="M256 111 C 272 105 288 117 302 111"/>
+          <path d="M292 105 L 303 111 L 292 117"/>
+          <path d="M536 111 C 552 106 568 117 582 111"/>
+          <path d="M572 105 L 583 111 L 572 117"/>
+          <path d="M816 111 C 832 105 848 118 862 111"/>
+          <path d="M852 105 L 863 111 L 852 117"/>
+          <!-- descente à droite -->
+          <path d="M980 164 C 987 195 973 221 980 250"/>
+          <path d="M974 240 L 980 251 L 986 240"/>
+          <!-- rangée du bas, vers la gauche -->
+          <path d="M864 301 C 848 296 832 307 818 301"/>
+          <path d="M828 295 L 817 301 L 828 307"/>
+          <path d="M584 301 C 568 295 552 308 538 301"/>
+          <path d="M548 295 L 537 301 L 548 307"/>
+        </g>
+
+        <!-- boucle de retour -->
+        <g stroke="var(--ex-orange-s)" stroke-width="2.2" stroke-dasharray="9 8">
+          <path d="M980 354 C 980 402 962 434 918 434 L 196 434 C 156 434 140 414 140 376 L 140 172"/>
+        </g>
+        <g stroke="var(--ex-orange-s)" stroke-width="2.2">
+          <path d="M134 182 L 140 170 L 146 182"/>
+        </g>
+      </g>
+
+      <!-- textes (nets) -->
+      <g text-anchor="middle">
+        <text class="dia-t" x="140" y="102">1 · Sources</text>
+        <text class="dia-s" x="140" y="128">YouTube · Trends · mots-clés</text>
+
+        <text class="dia-t" x="420" y="102">2 · Ingestion</text>
+        <text class="dia-s" x="420" y="128">collecte + étiquetage 3 axes</text>
+
+        <text class="dia-t" x="700" y="102">3 · Préparation</text>
+        <text class="dia-s" x="700" y="128">cible · features · corpus RAG</text>
+
+        <text class="dia-t" x="980" y="102">4 · Modélisation</text>
+        <text class="dia-s" x="980" y="128">scoring · famille · RAG</text>
+
+        <text class="dia-t" x="980" y="292">5 · Orchestration</text>
+        <text class="dia-s" x="980" y="318">menu du jour · dérive</text>
+
+        <text class="dia-t" x="700" y="292">6 · API</text>
+        <text class="dia-s" x="700" y="318">FastAPI, modèles chargés</text>
+
+        <text class="dia-t" x="420" y="292">7 · Frontend</text>
+        <text class="dia-s" x="420" y="318">Streamlit + app de production</text>
+
+        <text class="dia-l" x="560" y="460">boucle quotidienne — 06:00 UTC, inférence seule, aucun ré-entraînement</text>
+      </g>
+    </svg>
+
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--ex-green);border-color:var(--ex-green-s)"></i>Données</span>
+      <span><i class="swatch" style="background:var(--ex-blue);border-color:var(--ex-blue-s)"></i>Préparation</span>
+      <span><i class="swatch" style="background:var(--ex-violet);border-color:var(--ex-violet-s)"></i>Modélisation</span>
+      <span><i class="swatch" style="background:var(--ex-orange);border-color:var(--ex-orange-s)"></i>Orchestration</span>
+      <span><i class="swatch" style="background:var(--ex-red);border-color:var(--ex-red-s)"></i>API</span>
+      <span><i class="swatch" style="background:var(--ex-cyan);border-color:var(--ex-cyan-s)"></i>Frontend</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 2. DÉTAIL DES COUCHES ══════════════ -->
+<section>
+  <h2>Le détail, couche par couche</h2>
+  <p class="sub">Chaque couche correspond à un sous-dossier de <code>src/</code> et se lance comme un
+    module Python indépendant, depuis la racine du dépôt.</p>
+
+  <!-- 1 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">1</span>
+      <h3>Sources de données</h3>
+      <span class="hint">476 vidéos · 350 mots-clés · 171 sujets</span>
+    </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg>
+        <div class="bar"></div>
+        <h4>Concurrents YouTube</h4>
+        <p>Collecte légale des métadonnées publiques de vidéos concurrentes : titre, date, durée,
+          tags, vues. Aucune donnée personnelle.</p>
+        <div class="tags"><span class="tag">YouTube Data API v3</span><span class="tag">7 chaînes × 2 langues</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17l5-6 4 3 4-6 5 4"/><path d="M3 21h18"/></svg>
+        <div class="bar"></div>
+        <h4>Sujets tendance</h4>
+        <p>Signaux de fraîcheur issus de Google Trends, requêtés par niche et par zone linguistique.</p>
+        <div class="tags"><span class="tag">pytrends</span><span class="tag">FR / US</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+        <div class="bar"></div>
+        <h4>Mots-clés porteurs</h4>
+        <p>Termes agrégés par catégorie, utilisés comme ancrage lexical lors de la génération.</p>
+        <div class="tags"><span class="tag">agrégation par niche</span></div>
+      </article>
+    </div>
   </div>
 
-  <!-- 1. SOURCES -->
-  <section class="layer">
-    <div class="layer-title"><i class="bar" style="background:var(--data)"></i>1 · Sources de données</div>
-    <div class="row">
-      <div class="mod t-data">
-        <h3><span class="ico">📺</span>Concurrents YouTube</h3>
-        <p>Collecte légale des métadonnées de vidéos concurrentes (titres, vues, durée, tags, dates…).</p>
-        <div class="tech"><b>YouTube Data API</b><b>collecte continue</b></div>
-      </div>
-      <div class="mod t-data">
-        <h3><span class="ico">🗂️</span>Corpus interne</h3>
-        <p>~50 quiz existants de la chaîne : matière première du style propriétaire.</p>
-        <div class="tech"><b>n ≈ 50</b><b>FR / EN</b></div>
-      </div>
-      <div class="mod t-data">
-        <h3><span class="ico">🌐</span>Base factuelle</h3>
-        <p>Connaissances externes pour le RAG : logos, films, drapeaux, culture FR/EN.</p>
-        <div class="tech"><b>knowledge base</b></div>
-      </div>
+  <!-- 2 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">2</span>
+      <h3>Ingestion et étiquetage</h3>
+      <span class="hint"><code>src/ingestion/</code></span>
     </div>
-  </section>
-
-  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-
-  <!-- 2. INGESTION -->
-  <section class="layer">
-    <div class="layer-title"><i class="bar" style="background:var(--prep)"></i>2 · Ingestion & stockage</div>
-    <div class="row">
-      <div class="mod t-prep">
-        <h3><span class="ico">⬇️</span>Module d'ingestion</h3>
-        <p>Scripts de collecte planifiés, normalisation et dédoublonnage des entrées.</p>
-        <div class="tech"><b>Python</b><b>requests</b></div>
-      </div>
-      <div class="mod t-prep">
-        <h3><span class="ico">💾</span>Stockage versionné</h3>
-        <p>Données brutes puis nettoyées, traçables et reproductibles.</p>
-        <div class="tech"><b>data/raw</b><b>data/processed</b><b>DVC</b></div>
-      </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
+        <div class="bar"></div>
+        <h4>Module de collecte</h4>
+        <p>Scripts planifiés, normalisation des champs, dédoublonnage par identifiant de vidéo.</p>
+        <div class="tags"><span class="tag">Python 3.12</span><span class="tag">requests</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2.5"/></svg>
+        <div class="bar"></div>
+        <h4>Étiquetage sur trois axes</h4>
+        <p>Chaque vidéo est rattachée à une catégorie, une langue et une famille de quiz. C'est cette
+          grille qui structure toute la modélisation.</p>
+        <div class="tags"><span class="tag">catégorie</span><span class="tag">langue</span><span class="tag">famille</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+        <div class="bar"></div>
+        <h4>Stockage traçable</h4>
+        <p>Données brutes conservées telles quelles, données préparées régénérables à tout moment
+          depuis les brutes.</p>
+        <div class="tags"><span class="tag">data/raw</span><span class="tag">data/processed</span></div>
+      </article>
     </div>
-  </section>
+  </div>
 
-  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-
-  <!-- 3. PREP -->
-  <section class="layer">
-    <div class="layer-title"><i class="bar" style="background:var(--prep)"></i>3 · Préparation des données</div>
-    <div class="row">
-      <div class="mod t-prep">
-        <h3><span class="ico">🔍</span>Exploration (EDA)</h3>
-        <p>Structure, biais, valeurs manquantes, distributions, outliers, corrélations.</p>
-        <div class="tech"><b>pandas</b><b>matplotlib</b><b>seaborn</b></div>
-      </div>
-      <div class="mod t-prep">
-        <h3><span class="ico">🧱</span>Feature engineering</h3>
-        <p>Construction des features de viralité à partir des métadonnées.</p>
-        <div class="tech"><b>scaling</b><b>encoding</b></div>
-      </div>
-      <div class="mod t-prep">
-        <h3><span class="ico">✨</span>Indexation RAG</h3>
-        <p>Corpus interne + base factuelle découpés et encodés en embeddings pour la base vectorielle.</p>
-        <div class="tech"><b>sentence-transformers</b><b>chunking</b></div>
-      </div>
+  <!-- 3 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">3</span>
+      <h3>Préparation des données</h3>
+      <span class="hint"><code>src/features/</code> · <code>src/generator/corpus.py</code></span>
     </div>
-  </section>
-
-  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-
-  <!-- 4. MODELS -->
-  <section class="layer">
-    <div class="layer-title"><i class="bar" style="background:var(--model)"></i>4 · Modélisation — deux modèles couplés</div>
-    <div class="row">
-      <div class="mod t-model" style="max-width:430px;flex:1 1 380px">
-        <span class="branch-tag" style="color:var(--model)">Branche A · Générateur</span>
-        <h3 style="margin-top:6px"><span class="ico">🧠</span>RAG — idées de quiz</h3>
-        <p>Récupération sémantique (embeddings + base vectorielle) du style et des faits, injectés dans le prompt d'un LLM. Produit ~20 idées candidates FR/EN ancrées.</p>
-        <div class="tech"><b>embeddings</b><b>FAISS/Chroma</b><b>RAG</b><b>LLM</b></div>
-      </div>
-      <div class="mod t-model" style="max-width:430px;flex:1 1 380px">
-        <span class="branch-tag" style="color:var(--model)">Branche B · Scoring</span>
-        <h3 style="margin-top:6px"><span class="ico">📈</span>Scoring viral</h3>
-        <p>Modèle tabulaire entraîné sur les performances réelles des concurrents. Attribue un score de viralité prédit à chaque idée candidate.</p>
-        <div class="tech"><b>LightGBM</b><b>GridSearch / CV</b><b>SHAP</b><b>Spearman</b></div>
-      </div>
-    </div>
-  </section>
-
-  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-
-  <!-- 5. ORCHESTRATION + LOOPS -->
-  <section class="layer">
-    <div class="layer-title"><i class="bar" style="background:var(--orch)"></i>5 · Orchestration — la pipeline se boucle</div>
-    <div class="row">
-      <div class="mod t-orch">
-        <h3><span class="ico">🔁</span>Génération du menu</h3>
-        <p>Génère les candidats → score → sélectionne le top 10 (5 FR + 5 EN) classé par viralité.</p>
-        <div class="tech"><b>top-10</b><b>ranking</b></div>
-      </div>
-      <div class="mod t-orch">
-        <h3><span class="ico">⏰</span>Planificateur</h3>
-        <p>Déclenche la pipeline chaque matin, sans intervention humaine.</p>
-        <div class="tech"><b>GitHub Actions</b><b>cron</b><b>Modal</b></div>
-      </div>
-      <div class="mod t-orch">
-        <h3><span class="ico">📡</span>Monitoring de dérive</h3>
-        <p>Surveille l'évolution des tendances et déclenche le ré-entraînement si besoin.</p>
-        <div class="tech"><b>drift</b><b>alerting</b></div>
-      </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        <div class="bar"></div>
+        <h4>Variable cible</h4>
+        <p>La viralité est définie comme une performance relative à sa niche et à sa langue, et non
+          comme un nombre de vues brut : une petite chaîne peut donc surperformer.</p>
+        <div class="tags"><span class="tag">vues par jour</span><span class="tag">normalisation par niche</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <div class="bar"></div>
+        <h4>Feature engineering</h4>
+        <p>Une trentaine de colonnes tirées du titre, de la durée et du moment de publication. Un
+          garde-fou bloque toute variable connue seulement après publication.</p>
+        <div class="tags"><span class="tag">~30 features</span><span class="tag">règle anti-fuite</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16M4 10h10M4 15h13M4 20h7"/></svg>
+        <div class="bar"></div>
+        <h4>Corpus du RAG</h4>
+        <p>Titres performants, sujets tendance et mots-clés réunis en un corpus indexé, filtrable par
+          catégorie et par langue.</p>
+        <div class="tags"><span class="tag">TF-IDF</span><span class="tag">100 % hors-ligne</span></div>
+      </article>
     </div>
 
-    <div class="loop">
-      <div class="loop-card loop-daily">
-        <h3>🟢 Boucle quotidienne <span class="freq">CHAQUE MATIN · ~0 €</span></h3>
-        <p style="margin:6px 0 0;color:var(--muted);font-size:.82rem">Inférence seule — aucun ré-entraînement.</p>
-        <ol>
-          <li>Ingestion des dernières vidéos concurrentes</li>
-          <li>Rafraîchissement des features de tendance</li>
-          <li>Génération des idées (LLM + RAG)</li>
-          <li>Scoring & classement (LightGBM)</li>
-          <li>Publication du « menu du jour » via l'API</li>
-        </ol>
-        <div class="cost">→ Scoring CPU = 0 € · génération serverless = quelques cents/jour</div>
-      </div>
-      <div class="loop-card loop-train">
-        <h3>🟠 Boucle de mise à jour <span class="freq">HEBDO / MENSUEL · CPU</span></h3>
-        <p style="margin:6px 0 0;color:var(--muted);font-size:.82rem">Déclenchée à la demande ou sur dérive.</p>
-        <ol>
-          <li>Ré-entraînement du scoring sur nouvelles perfs (LightGBM, CPU)</li>
-          <li>Ré-indexation du corpus RAG (nouveaux docs)</li>
-          <li>Évaluation vs benchmark</li>
-          <li>Versionnage du nouveau modèle / index</li>
-        </ol>
-        <div class="cost">→ Pas de GPU : réentraînement CPU + ré-indexation ≈ gratuit</div>
-      </div>
+    <div class="board" style="margin-top:28px">
+      <svg viewBox="0 0 1060 180" role="img" aria-label="Chaîne de pré-traitement, des données brutes au jeu de données prêt pour la modélisation">
+        <g filter="url(#sketch-a)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="0"   y="10" width="180" height="78" rx="9" fill="var(--ex-blue)" stroke="var(--ex-blue-s)" stroke-width="2.2"/>
+          <rect x="220" y="10" width="180" height="78" rx="9" fill="var(--ex-blue)" stroke="var(--ex-blue-s)" stroke-width="2.2"/>
+          <rect x="440" y="10" width="180" height="78" rx="9" fill="var(--ex-blue)" stroke="var(--ex-blue-s)" stroke-width="2.2"/>
+          <rect x="660" y="10" width="180" height="78" rx="9" fill="var(--ex-blue)" stroke="var(--ex-blue-s)" stroke-width="2.2"/>
+          <rect x="880" y="10" width="180" height="78" rx="9" fill="var(--ex-green)" stroke="var(--ex-green-s)" stroke-width="2.2"/>
+          <g stroke="var(--ex-ink)" stroke-width="2.2">
+            <path d="M186 49 C 194 44 204 54 212 49"/><path d="M203 43 L 213 49 L 203 55"/>
+            <path d="M406 49 C 414 55 424 44 432 49"/><path d="M423 43 L 433 49 L 423 55"/>
+            <path d="M626 49 C 634 44 644 54 652 49"/><path d="M643 43 L 653 49 L 643 55"/>
+            <path d="M846 49 C 854 55 864 44 872 49"/><path d="M863 43 L 873 49 L 863 55"/>
+          </g>
+          <!-- annotation manuscrite sur la règle anti-fuite -->
+          <g stroke="#8a8a8a" stroke-width="2">
+            <path d="M750 136 C 744 124 756 110 750 96"/>
+            <path d="M744 106 L 750 94 L 756 106"/>
+          </g>
+        </g>
+        <g text-anchor="middle">
+          <text class="dia-t" x="90"  y="44">Données brutes</text><text class="dia-s" x="90"  y="64">476 vidéos</text>
+          <text class="dia-t" x="310" y="44">Nettoyage</text><text class="dia-s" x="310" y="64">dédoublonnage, dates</text>
+          <text class="dia-t" x="530" y="44">Étiquetage</text><text class="dia-s" x="530" y="64">3 axes de classement</text>
+          <text class="dia-t" x="750" y="44">Features</text><text class="dia-s" x="750" y="64">~30 colonnes</text>
+          <text class="dia-t" x="970" y="44">Dataset prêt</text><text class="dia-s" x="970" y="64">pour la modélisation</text>
+          <text class="dia-l" x="750" y="158">garde-fou : vues, likes et commentaires exclus</text>
+        </g>
+      </svg>
     </div>
-  </section>
+  </div>
 
-  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-
-  <!-- 6. API -->
-  <section class="layer">
-    <div class="layer-title"><i class="bar" style="background:var(--api)"></i>6 · API (point d'intégration)</div>
-    <div class="row">
-      <div class="mod t-api">
-        <h3><span class="ico">🚀</span>Service API</h3>
-        <p>Expose le menu du jour et la génération à la demande. Charge les modèles pré-entraînés (jamais de ré-entraînement live).</p>
-        <div class="tech"><b>FastAPI</b><b>modèles chargés</b></div>
-      </div>
-      <div class="mod t-api">
-        <h3><span class="ico">🔑</span>Endpoints</h3>
-        <p style="margin-bottom:8px"><code style="font-size:.76rem">GET /suggestions/today</code> · <code style="font-size:.76rem">POST /generate</code> · <code style="font-size:.76rem">POST /score</code></p>
-        <div class="tech"><b>JSON</b><b>auth</b></div>
-      </div>
+  <!-- 4 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">4</span>
+      <h3>Modélisation — trois briques couplées</h3>
+      <span class="hint"><code>src/scoring/</code> · <code>src/family/</code> · <code>src/generator/</code></span>
     </div>
-  </section>
-
-  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-
-  <!-- 7. FRONTEND -->
-  <section class="layer" style="border-color:#1f5d63;background:linear-gradient(180deg,#0f2329,#12161d)">
-    <div class="layer-title"><i class="bar" style="background:var(--front)"></i>7 · Frontend — intégration de l'API</div>
-    <div class="row">
-      <div class="mod t-front">
-        <h3><span class="ico">🖥️</span>App de génération de quiz</h3>
-        <p>Appelle <code style="font-size:.76rem">/suggestions/today</code> et affiche les 10 idées du jour. Transformation en vidéo en un clic.</p>
-        <div class="tech"><b>fetch API</b><b>menu du jour</b></div>
-      </div>
-      <div class="mod t-front">
-        <h3><span class="ico">📊</span>Démo Streamlit (PoC)</h3>
-        <p>Onglets : Suggestions du jour · Génération à la demande · Explication du score (SHAP) · DataViz.</p>
-        <div class="tech"><b>Streamlit</b><b>multi-onglets</b></div>
-      </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 20V10M9 20V4M15 20v-8M21 20V7"/></svg>
+        <div class="bar"></div>
+        <h4>Scoring viral</h4>
+        <p>Régression entraînée sur les performances réelles des concurrents. Elle attribue un score
+          de viralité prédit à toute idée, avant même sa production.</p>
+        <div class="tags"><span class="tag">LightGBM</span><span class="tag">Spearman 0,476</span><span class="tag">SHAP</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+        <div class="bar"></div>
+        <h4>Classifieur de famille</h4>
+        <p>Quatre vidéos sur dix n'étaient rattachées à aucune famille par les règles. Un modèle dédié
+          comble ces trous à partir du seul titre.</p>
+        <div class="tags"><span class="tag">LightGBM</span><span class="tag">macro-F1 0,76</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3a4 4 0 00-4 4 3.5 3.5 0 00-1 6.8V17a3 3 0 006 0V3z"/><path d="M12 3a4 4 0 014 4 3.5 3.5 0 011 6.8V17a3 3 0 01-6 0"/></svg>
+        <div class="bar"></div>
+        <h4>Générateur RAG</h4>
+        <p>Le contexte récupéré dans la niche est injecté dans le prompt d'un modèle de langage, qui
+          produit des idées ancrées. Chacune est ensuite notée puis classée.</p>
+        <div class="tags"><span class="tag">retrieval → LLM → scoring</span><span class="tag">sans fine-tuning</span></div>
+      </article>
     </div>
-  </section>
+  </div>
 
-  <p class="note">
-    Le frontend ne consomme que des résultats <b>pré-calculés et servis par l'API</b> :
-    affichage instantané, aucun ré-entraînement côté client.
-    <span class="pill">conforme à la consigne soutenance</span>
-  </p>
+  <!-- 5 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">5</span>
+      <h3>Orchestration — la chaîne se boucle</h3>
+      <span class="hint"><code>src/mlops/</code></span>
+    </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        <div class="bar"></div>
+        <h4>Menu du jour</h4>
+        <p>Génère les candidats, les score, puis retient les dix meilleurs : cinq en français, cinq en
+          anglais, classés par potentiel viral.</p>
+        <div class="tags"><span class="tag">5 FR + 5 EN</span><span class="tag">classement</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <div class="bar"></div>
+        <h4>Planificateur</h4>
+        <p>Déclenche la chaîne chaque matin sans intervention humaine, et publie le résultat pour
+          l'API.</p>
+        <div class="tags"><span class="tag">GitHub Actions</span><span class="tag">cron 06:00 UTC</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13h4l2.5-6 3 12 2.5-6h6"/></svg>
+        <div class="bar"></div>
+        <h4>Suivi de dérive</h4>
+        <p>Compare chaque exécution aux précédentes et signale un décrochage du score moyen, qui
+          justifierait un ré-entraînement.</p>
+        <div class="tags"><span class="tag">historique des runs</span><span class="tag">alerte</span></div>
+      </article>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">6</span>
+      <h3>API — le point d'intégration</h3>
+      <span class="hint"><code>src/api/</code></span>
+    </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+        <div class="bar"></div>
+        <h4>Service d'inférence</h4>
+        <p>Les modèles sont chargés une seule fois au démarrage. Rien n'est jamais ré-entraîné en
+          ligne, conformément à la consigne de soutenance.</p>
+        <div class="tags"><span class="tag">FastAPI</span><span class="tag">chargement au démarrage</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M17 12v4M20 12v3"/></svg>
+        <div class="bar"></div>
+        <h4>Points d'entrée</h4>
+        <p><code>GET /suggestions/today</code> pour le menu pré-calculé,
+          <code>POST /generate</code> pour la génération à la demande,
+          <code>POST /score</code> pour noter des idées existantes.</p>
+        <div class="tags"><span class="tag">JSON</span><span class="tag">CORS restreint</span></div>
+      </article>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">7</span>
+      <h3>Frontend — consommation de l'API</h3>
+      <span class="hint"><code>streamlit_app/</code> · <code>web/</code></span>
+    </div>
+    <div class="grid">
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 21h6M12 17v4"/></svg>
+        <div class="bar"></div>
+        <h4>Démonstration Streamlit</h4>
+        <p>Quatre onglets : suggestions du jour, génération à la demande, explication du score et
+          exploration des données.</p>
+        <div class="tags"><span class="tag">Streamlit</span><span class="tag">modèle chargé</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+        <div class="bar"></div>
+        <h4>Application de production</h4>
+        <p>Récupère le menu du jour et le transforme en vidéo. C'est le débouché réel du système.</p>
+        <div class="tags"><span class="tag">appel HTTP</span><span class="tag">menu du jour</span></div>
+      </article>
+      <article class="card">
+        <svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/></svg>
+        <div class="bar"></div>
+        <h4>Interface de test</h4>
+        <p>Page autonome servant à vérifier les réponses de l'API pendant le développement,
+          indépendante des frontends de production.</p>
+        <div class="tags"><span class="tag">HTML autonome</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 3. LES DEUX BOUCLES ══════════════ -->
+<section>
+  <h2>Les deux boucles</h2>
+  <p class="sub">La première tourne toute seule et ne fait que de l'inférence. La seconde n'est
+    déclenchée qu'en cas de dérive ou de nouvelles données, et c'est la seule à toucher aux modèles.</p>
+
+  <!-- boucle quotidienne -->
+  <div class="loop">
+    <div class="loop-head">
+      <h4>Boucle quotidienne</h4>
+      <span class="badge">chaque matin · coût ≈ 0 €</span>
+    </div>
+    <p class="note">Inférence seule, aucun ré-entraînement. Le scoring tourne sur processeur, la
+      génération se réduit à quelques appels au modèle de langage.</p>
+
+    <div class="board">
+      <svg viewBox="0 0 1060 178" role="img" aria-label="Les cinq étapes de la boucle quotidienne, du rafraîchissement des données à la publication du menu">
+        <g filter="url(#sketch-b)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="0"   y="10" width="180" height="78" rx="9" fill="var(--ex-green)" stroke="var(--ex-green-s)" stroke-width="2.2"/>
+          <rect x="220" y="10" width="180" height="78" rx="9" fill="var(--ex-green)" stroke="var(--ex-green-s)" stroke-width="2.2"/>
+          <rect x="440" y="10" width="180" height="78" rx="9" fill="var(--ex-green)" stroke="var(--ex-green-s)" stroke-width="2.2"/>
+          <rect x="660" y="10" width="180" height="78" rx="9" fill="var(--ex-green)" stroke="var(--ex-green-s)" stroke-width="2.2"/>
+          <rect x="880" y="10" width="180" height="78" rx="9" fill="var(--ex-green)" stroke="var(--ex-green-s)" stroke-width="2.2"/>
+          <g stroke="var(--ex-ink)" stroke-width="2.2">
+            <path d="M186 49 C 194 44 204 54 212 49"/><path d="M203 43 L 213 49 L 203 55"/>
+            <path d="M406 49 C 414 55 424 44 432 49"/><path d="M423 43 L 433 49 L 423 55"/>
+            <path d="M626 49 C 634 44 644 54 652 49"/><path d="M643 43 L 653 49 L 643 55"/>
+            <path d="M846 49 C 854 55 864 44 872 49"/><path d="M863 43 L 873 49 L 863 55"/>
+          </g>
+          <g stroke="var(--ex-green-s)" stroke-width="2.2" stroke-dasharray="9 8">
+            <path d="M970 92 C 970 118 958 130 930 130 L 130 130 C 102 130 90 118 90 94"/>
+          </g>
+          <g stroke="var(--ex-green-s)" stroke-width="2.2">
+            <path d="M84 104 L 90 92 L 96 104"/>
+          </g>
+        </g>
+        <g text-anchor="middle">
+          <text class="dia-t" x="90"  y="44">Collecte</text><text class="dia-s" x="90"  y="66">dernières vidéos</text>
+          <text class="dia-t" x="310" y="44">Tendances</text><text class="dia-s" x="310" y="66">rafraîchies</text>
+          <text class="dia-t" x="530" y="44">Génération</text><text class="dia-s" x="530" y="66">RAG + LLM</text>
+          <text class="dia-t" x="750" y="44">Scoring</text><text class="dia-s" x="750" y="66">et classement</text>
+          <text class="dia-t" x="970" y="44">Publication</text><text class="dia-s" x="970" y="66">menu du jour</text>
+          <text class="dia-l" x="530" y="160">le lendemain matin, on recommence</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- boucle de mise à jour -->
+  <div class="loop">
+    <div class="loop-head">
+      <h4>Boucle de mise à jour</h4>
+      <span class="badge">à la demande ou sur dérive · processeur seul</span>
+    </div>
+    <p class="note">La seule qui ré-entraîne. Aucune carte graphique n'est nécessaire : le corpus est
+      modeste et les modèles sont légers.</p>
+
+    <div class="board">
+      <svg viewBox="0 0 1060 178" role="img" aria-label="Les quatre étapes de la boucle de mise à jour, du ré-entraînement au versionnage">
+        <g filter="url(#sketch-c)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="110" y="10" width="180" height="78" rx="9" fill="var(--ex-orange)" stroke="var(--ex-orange-s)" stroke-width="2.2"/>
+          <rect x="330" y="10" width="180" height="78" rx="9" fill="var(--ex-orange)" stroke="var(--ex-orange-s)" stroke-width="2.2"/>
+          <rect x="550" y="10" width="180" height="78" rx="9" fill="var(--ex-orange)" stroke="var(--ex-orange-s)" stroke-width="2.2"/>
+          <rect x="770" y="10" width="180" height="78" rx="9" fill="var(--ex-orange)" stroke="var(--ex-orange-s)" stroke-width="2.2"/>
+          <g stroke="var(--ex-ink)" stroke-width="2.2">
+            <path d="M296 49 C 304 44 314 54 322 49"/><path d="M313 43 L 323 49 L 313 55"/>
+            <path d="M516 49 C 524 55 534 44 542 49"/><path d="M533 43 L 543 49 L 533 55"/>
+            <path d="M736 49 C 744 44 754 54 762 49"/><path d="M753 43 L 763 49 L 753 55"/>
+          </g>
+          <g stroke="var(--ex-orange-s)" stroke-width="2.2" stroke-dasharray="9 8">
+            <path d="M860 92 C 860 118 848 130 820 130 L 240 130 C 212 130 200 118 200 94"/>
+          </g>
+          <g stroke="var(--ex-orange-s)" stroke-width="2.2">
+            <path d="M194 104 L 200 92 L 206 104"/>
+          </g>
+        </g>
+        <g text-anchor="middle">
+          <text class="dia-t" x="200" y="44">Ré-entraînement</text><text class="dia-s" x="200" y="66">scoring + famille</text>
+          <text class="dia-t" x="420" y="44">Ré-indexation</text><text class="dia-s" x="420" y="66">corpus du RAG</text>
+          <text class="dia-t" x="640" y="44">Évaluation</text><text class="dia-s" x="640" y="66">contre l'ancien modèle</text>
+          <text class="dia-t" x="860" y="44">Versionnage</text><text class="dia-s" x="860" y="66">modèle + index</text>
+          <text class="dia-l" x="530" y="160">le nouveau modèle alimente la boucle quotidienne</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CLÔTURE ══════════════ -->
+<section>
+  <div class="callout">
+    <p><strong>Un frontend qui ne calcule rien.</strong> L'interface ne consomme que des résultats
+      pré-calculés et servis par l'API : l'affichage est instantané, aucun modèle n'est ré-entraîné
+      côté client, et la démonstration reste stable quoi qu'il arrive pendant la soutenance.</p>
+  </div>
+
+  <footer>
+    <span>Quiz IA — architecture des modules</span>
+    <span>Génération et scoring d'idées de quiz vidéo bilingues · projet de fin d'études</span>
+  </footer>
+</section>
 
 </div>
 </body>
