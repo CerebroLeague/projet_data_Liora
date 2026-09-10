@@ -1,0 +1,45 @@
+name: Menu du jour (boucle quotidienne)
+
+# Génère chaque matin les suggestions de quiz (inférence seule, aucun ré-entraînement).
+on:
+  schedule:
+    - cron: "0 6 * * *"      # tous les jours à 06:00 UTC
+  workflow_dispatch:          # déclenchement manuel possible
+
+permissions:
+  contents: write             # pour committer le menu du jour
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Générer le menu du jour
+        env:
+          LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: python -m src.mlops.daily_pipeline
+
+      - name: Publier le menu (commit)
+        run: |
+          git config user.name  "quiz-ia-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f data/processed/suggestions.json reports/run_history.jsonl
+          git commit -m "chore: menu du jour $(date -u +%Y-%m-%d)" || echo "rien à committer"
+          git push || echo "push impossible (droits ?)"
+
+      - name: Archiver aussi en artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: suggestions-${{ github.run_number }}
+          path: data/processed/suggestions.json

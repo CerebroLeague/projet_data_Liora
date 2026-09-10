@@ -1,0 +1,20 @@
+{
+  "best": "lgbm_default",
+  "results": {
+    "dummy_mean": {
+      "spearman": 0.0,
+      "mae": 0.8662,
+      "rmse": 1.0248
+    },
+    "linear": {
+      "spearman": 0.3609,
+      "mae": 0.7978,
+      "rmse": 0.9514
+    },
+    "lgbm_default": {
+      "spearman": 0.4758,
+      "mae": 0.7374,
+      "rmse": 0.926
+    }
+  }
+}

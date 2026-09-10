@@ -1,0 +1,33 @@
+# Requêtes-amorces (seeds) par catégorie × langue.
+# Les catégories = les CHAÎNES réellement exploitées (cf. capture / src/taxonomy.py),
+# déclinées en FR et EN. Servent à :
+#   1. la DÉCOUVERTE de vidéos concurrentes (YouTube search)
+#   2. l'amorce des SUJETS TENDANCE (Google Trends)
+
+QUIZ_FOOT:
+  FR: ["quiz football", "devine le joueur de foot", "quiz foot", "blind test foot"]
+  EN: ["football quiz", "guess the footballer", "soccer quiz", "guess the player"]
+
+QUIZ_BASKET:
+  FR: ["quiz basket", "devine le joueur nba", "quiz nba"]
+  EN: ["basketball quiz", "nba quiz", "guess the nba player"]
+
+QUIZ_KPOP:
+  FR: ["quiz kpop", "devine la chanson kpop", "quiz idol kpop", "blind test kpop"]
+  EN: ["kpop quiz", "guess the kpop song", "kpop idol quiz", "guess the idol"]
+
+QUIZ_OTAKU:
+  FR: ["quiz anime", "quiz manga", "devine l'anime", "quiz otaku"]
+  EN: ["anime quiz", "manga quiz", "guess the anime", "otaku quiz"]
+
+QUIZ_GLOBAL:
+  FR: ["quiz culture générale", "quiz general", "test de connaissances"]
+  EN: ["general knowledge quiz", "trivia quiz", "knowledge test"]
+
+QUIZ_DATAWORLD:
+  FR: ["quiz drapeaux", "devine le pays", "quiz géographie", "quiz monde"]
+  EN: ["flag quiz", "guess the country", "geography quiz", "world quiz"]
+
+QUIZ_RELIGION:
+  FR: ["quiz religion", "quiz culture religieuse", "quiz bible coran"]
+  EN: ["religion quiz", "bible quiz", "world religions quiz"]

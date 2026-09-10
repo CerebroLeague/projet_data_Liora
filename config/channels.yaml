@@ -1,0 +1,14 @@
+# Chaînes YouTube concurrentes à suivre (axe "chaînes connues").
+# Renseigner soit l'ID de chaîne (UC...), soit le handle (@nom), soit l'URL.
+# Laisser vide pour s'appuyer uniquement sur la découverte par mots-clés.
+#
+# Astuce : l'ID se trouve dans l'URL d'une chaîne (youtube.com/channel/UC...).
+# Les handles (@...) sont résolus automatiquement en ID au moment de la collecte.
+
+channels:
+  # Exemple (à remplacer par tes vrais concurrents) :
+  # - handle: "@example-quiz-channel"
+  #   note: "concurrent FR quiz foot"
+  # - id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+  #   note: "concurrent EN guess the movie"
+  []

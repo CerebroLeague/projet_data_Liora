@@ -1,0 +1,126 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DEPLOY_DIR: /opt/quiz-ia
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Charger la clé SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+
+      # On transfère uniquement le code / la config.
+      # data, models et reports sont EXCLUS pour ne pas écraser les artefacts
+      # générés sur le serveur (modèle entraîné, menu du jour, historique).
+      - name: Transfer files (rsync)
+        run: |
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+            --exclude='.git' --exclude='.github' --exclude='.claude' \
+            --exclude='.venv' --exclude='__pycache__' \
+            --exclude='.env' --exclude='.env.*' \
+            --exclude='data' --exclude='models' --exclude='reports' \
+            --exclude='notebooks/.ipynb_checkpoints' \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.DEPLOY_DIR }}/
+
+      - name: Create .env file
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_DIR }}
+            cat > .env <<'ENVEOF'
+            YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}
+            LLM_PROVIDER=${{ secrets.LLM_PROVIDER }}
+            LLM_API_KEY=${{ secrets.LLM_API_KEY }}
+            LLM_MODEL=${{ secrets.LLM_MODEL }}
+            ENVEOF
+            sed -i 's/^[[:space:]]*//' .env
+
+      - name: Build image
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_DIR }}
+            docker compose build
+
+      # Bootstrap auto-réparateur : au 1er déploiement (ou si le modèle manque),
+      # on collecte -> features -> entraîne. Ensuite on (re)génère le menu du jour.
+      - name: Bootstrap (modèle & menu)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_DIR }}
+            if [ ! -f models/scoring_viral.joblib ]; then
+              echo "Aucun modèle : bootstrap complet…"
+              if [ ! -f data/processed/dataset.csv ]; then
+                docker compose run --rm api python -m src.ingestion.run_ingestion --max-per-query 15 --skip-trends
+                docker compose run --rm api python -m src.features.run_features
+              fi
+              docker compose run --rm api python -m src.scoring.run_scoring --no-grid --no-shap
+            fi
+            docker compose run --rm api python -m src.mlops.daily_pipeline || true
+
+      - name: Start services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_DIR }}
+            docker compose down
+            docker compose up -d
+
+      - name: Verify deployment
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 5m
+          script: |
+            cd ${{ env.DEPLOY_DIR }}
+            sleep 10
+            docker compose ps
+            PORT=$(grep -E '^API_PORT=' .env | cut -d= -f2); PORT=${PORT:-8000}
+            curl -sf "http://127.0.0.1:${PORT}/health" && echo " -> API OK" || echo "API KO"
+
+      - name: Cleanup old Docker images
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 5m
+          script: docker image prune -f

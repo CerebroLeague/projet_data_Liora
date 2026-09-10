@@ -1,0 +1,51 @@
+# Déploiement simple sur VPS : API + démo Streamlit + planificateur quotidien.
+# Les 3 services partagent la même image et les mêmes volumes (données/modèles/résultats).
+
+services:
+  # ── API d'inférence (intégration produit) ──
+  api:
+    build: .
+    image: quiz-ia:latest
+    command: uvicorn src.api.app:app --host 0.0.0.0 --port 8000
+    # port hôte configurable (défaut 8000 — libre sur le VPS ; 3000/3001/3003/3005/5432 déjà pris)
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file: [.env]
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    restart: unless-stopped
+
+  # ── Démo PoC (soutenance) ──
+  streamlit:
+    image: quiz-ia:latest
+    depends_on: [api]
+    command: >
+      streamlit run streamlit_app/app.py
+      --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    # port hôte configurable (défaut 8501 — libre sur le VPS)
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    env_file: [.env]
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    restart: unless-stopped
+
+  # ── Boucle quotidienne (génère le menu du jour) ──
+  scheduler:
+    image: quiz-ia:latest
+    depends_on: [api]
+    # exécute une fois au démarrage puis toutes les 24 h
+    command: >
+      sh -c "while true; do
+      python -m src.mlops.daily_pipeline || true;
+      sleep 86400; done"
+    env_file: [.env]
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    restart: unless-stopped

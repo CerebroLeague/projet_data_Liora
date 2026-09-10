@@ -1,0 +1,28 @@
+Message de l'encadrant — déroulé du projet et échéances
+
+Étape 0 — Cadrage (première réunion) : deadline 9 décembre 2025
+Après l'étape de cadrage, je vous enverrai un repo GitHub pour votre groupe. Celui-ci devra respecter le template fourni et être transmis au jury avec le rapport final.
+
+Étape 1 — Exploration des données + DataViz : deadline 12 décembre 2025
+Définir le contexte et le périmètre du projet ; bien comprendre le projet et se renseigner sur les notions introduites. Prendre en main le jeu de données et en faire une analyse presque exhaustive (structure, difficultés, biais). Au moins 5 représentations graphiques pertinentes, chacune avec un commentaire précis + avis métier et une validation par manipulation de données ou test statistique.
+
+Étape 2 — Pre-processing et feature engineering : deadline 19 décembre 2025
+Nettoyer le jeu de données, transformer/ajouter des features, enrichir si besoin. Objectif : un dataset prêt pour la modélisation.
+
+→ Rendu 1 : rapport d'exploration, de data visualisation et de pre-processing.
+
+Étape 3 — Modélisation
+
+Step 1 (deadline 13 février 2026) : premières itérations avec des modèles baseline ; analyse de la pertinence de l'approche et du modèle.
+Step 2 (deadline 20 mars 2026) : métriques ML + statistiques pour exploiter les résultats ; optimisation, essai de modèles plus complexes et comparaison.
+Step 3 (deadline 22 mai 2026) : modélisation avancée (bagging/boosting, Deep Learning) ; interprétabilité ; conclusions scientifiques et métiers.
+→ Rendu 2 : rapport de modélisation.
+
+Étape 4 — Rapport final + code sur GitHub : deadline 19 juin 2026
+Rapport final (Rendu 1 + Rendu 2 + conclusion + ouverture) et code propre et commenté.
+
+Étape 5 — Streamlit + soutenance : 24 juillet 2026
+Présentation PowerPoint + démo Streamlit, ou tout en Streamlit. Application esthétique, plusieurs onglets, codée avec soin, sans réentraîner le modèle, sans bug.
+Soutenance : 20 min de présentation + 10 min de questions.
+
+Note de l'encadrant : une attention particulière sera portée à la forme des rapports (illustrations, mise en page, orthographe). Des rendus insuffisants ou en retard empêchent la validation du projet.

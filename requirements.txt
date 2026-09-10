@@ -1,0 +1,28 @@
+# ── Sprint A — Ingestion & étiquetage des données ──
+google-api-python-client>=2.120   # YouTube Data API v3
+pytrends>=4.9                      # Google Trends (sujets tendance)
+pandas>=2.2                        # manipulation / stockage
+python-dotenv>=1.0                # chargement des clés API (.env)
+PyYAML>=6.0                        # configuration (catégories, chaînes)
+langdetect>=1.0.9                 # détection de langue FR/EN
+tqdm>=4.66                         # barres de progression
+
+# ── Sprint B — Exploration & features ──
+numpy>=1.26
+matplotlib>=3.8                   # figures DataViz
+seaborn>=0.13                     # figures statistiques
+scikit-learn>=1.4                 # scaling, encodage, métriques
+
+# ── Sprint C — Scoring viral ──
+lightgbm>=4.3                     # modèle de boosting (cœur ML)
+shap>=0.45                        # interprétabilité
+joblib>=1.3                       # sérialisation du modèle
+
+# ── Sprint D — Générateur RAG ──
+requests>=2.31                    # appels LLM API (mistral/openai/anthropic)
+# retrieval = TF-IDF (scikit-learn, déjà présent) — pas de torch/faiss requis
+
+# ── Sprint E — API + Démo ──
+fastapi>=0.110                    # API d'inférence
+uvicorn>=0.29                     # serveur ASGI
+streamlit>=1.33                   # démo PoC multi-onglets

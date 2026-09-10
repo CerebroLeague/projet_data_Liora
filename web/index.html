@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz IA — Studio</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#141a24; --panel2:#1b2331; --line:#2a3342;
+    --txt:#e8edf4; --muted:#93a1b3; --accent:#7c5cff; --accent2:#2dd4bf;
+    --fr:#5b8def; --en:#f06595; --hi:#3fb950; --mid:#e3b341; --lo:#ff7b72;
+    --shadow:0 8px 30px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1100px 600px at 80% -10%,#1a2336,#0b0f17);
+    color:var(--txt);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;min-height:100vh}
+  .app{max-width:1150px;margin:0 auto;padding:0 18px 70px}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:20px 0;border-bottom:1px solid var(--line);position:sticky;top:0;
+    background:#0b0f17ee;backdrop-filter:blur(8px);z-index:10;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:grid;place-items:center;font-size:1.35rem;box-shadow:var(--shadow)}
+  .brand h1{font-size:1.15rem;margin:0}
+  .brand p{margin:0;font-size:.75rem;color:var(--muted)}
+  .status{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .dot.on{background:var(--hi)} .dot.off{background:var(--lo)}
+
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin:22px 0 8px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  select,input{background:#0d1117;border:1px solid var(--line);color:var(--txt);
+    border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.9rem;min-width:150px}
+  .btn{font-family:inherit;font-size:.9rem;font-weight:700;border:none;border-radius:9px;
+    padding:10px 20px;cursor:pointer;background:linear-gradient(135deg,var(--accent),#5b46c9);color:#fff}
+  .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--txt);font-weight:600}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  nav{display:flex;gap:6px;margin:18px 0 10px}
+  nav button{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    padding:9px 16px;border-radius:10px;font-size:.86rem;cursor:pointer;font-family:inherit}
+  nav button.active{background:linear-gradient(135deg,var(--accent),#5b46c9);color:#fff;border-color:transparent}
+
+  .panel{display:none} .panel.active{display:block}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:800px){.grid{grid-template-columns:1fr}}
+  .col-head{display:flex;align-items:center;gap:9px;margin:8px 0 14px;font-size:.95rem}
+  .badge{font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.5px}
+  .b-fr{background:#16233f;color:var(--fr);border:1px solid #2f4a7a}
+  .b-en{background:#3a1626;color:var(--en);border:1px solid #6e2540}
+  .stack{display:flex;flex-direction:column;gap:12px}
+
+  .card{background:linear-gradient(180deg,var(--panel),#10151e);border:1px solid var(--line);
+    border-radius:14px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start}
+  .card .rank{font-size:.78rem;font-weight:800;color:var(--muted);min-width:22px;text-align:center;padding-top:2px}
+  .card-main{flex:1;min-width:0}
+  .card-main h3{margin:0 0 5px;font-size:.97rem;line-height:1.35}
+  .card-main .desc{margin:0;font-size:.8rem;color:var(--muted)}
+  .fam{display:inline-block;margin-top:9px;font-size:.68rem;font-weight:600;color:#adbac7;
+    background:#0d1117;border:1px solid var(--line);padding:2px 9px;border-radius:20px}
+  .score{min-width:70px;text-align:center}
+  .score .val{font-size:1.15rem;font-weight:800}
+  .score small{font-size:.6rem;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.5px}
+  .score .bar{height:5px;border-radius:3px;background:#222b38;margin-top:5px;overflow:hidden}
+  .score .bar i{display:block;height:100%}
+
+  .msg{color:var(--muted);font-size:.9rem;padding:26px;text-align:center}
+  .banner{font-size:.82rem;padding:10px 14px;border-radius:10px;margin:6px 0 0;border:1px solid var(--line);background:var(--panel)}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);
+    border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  footer{color:#5b6678;font-size:.75rem;text-align:center;margin-top:30px}
+  code{background:#0d1117;border:1px solid var(--line);padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">🎬</div>
+      <div><h1>Quiz IA <span style="color:var(--muted);font-weight:400">· Studio</span></h1>
+      <p>Idées de quiz générées et classées par potentiel viral</p></div>
+    </div>
+    <div class="status" id="status"><span class="dot"></span> connexion…</div>
+  </div>
+
+  <div class="controls">
+    <div class="field"><label for="category">Catégorie</label><select id="category"></select></div>
+    <div class="field"><label for="language">Langue</label>
+      <select id="language"><option value="FR">Français</option><option value="EN">English</option></select></div>
+    <div class="field"><label for="count">Nombre</label>
+      <select id="count"><option>3</option><option selected>5</option><option>8</option></select></div>
+    <div class="field"><label for="theme">Thème (option.)</label><input id="theme" placeholder="ex. Coupe du monde"></div>
+  </div>
+
+  <nav>
+    <button class="tab active" data-tab="today">Menu du jour</button>
+    <button class="tab" data-tab="gen">Génération à la demande</button>
+  </nav>
+
+  <div id="banner"></div>
+
+  <section class="panel active" id="today">
+    <div class="controls" style="margin-top:4px">
+      <button class="btn" id="loadToday">Charger le menu du jour</button>
+    </div>
+    <div class="grid">
+      <div><div class="col-head">🇫🇷 <span class="badge b-fr">FRANÇAIS</span></div><div class="stack" id="today-FR"><div class="msg">—</div></div></div>
+      <div><div class="col-head">🇬🇧 <span class="badge b-en">ENGLISH</span></div><div class="stack" id="today-EN"><div class="msg">—</div></div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="gen">
+    <div class="controls" style="margin-top:4px">
+      <button class="btn" id="run">Générer des idées</button>
+    </div>
+    <div class="stack" id="gen-list"><div class="msg">Choisis une catégorie et une langue, puis lance la génération.</div></div>
+  </section>
+
+  <footer>Interface de démonstration — les idées sont générées puis notées par le modèle de scoring.</footer>
+</div>
+
+<script>
+// Base de l'API (test autonome). Si la page est servie par l'API elle-même, on reste relatif.
+const API = (location.port === "8000") ? "" : "http://localhost:8000";
+
+const CAT = {QUIZ_FOOT:"Quiz Foot",QUIZ_BASKET:"Quiz Basket",QUIZ_KPOP:"Quiz K-Pop",
+  QUIZ_OTAKU:"Quiz Otaku",QUIZ_GLOBAL:"Quiz Global",QUIZ_DATAWORLD:"Quiz DataWorld",QUIZ_RELIGION:"Quiz Religion"};
+const FAM = {MCQ:"QCM",VRAI_FAUX:"Vrai / Faux",OUI_NON:"Oui / Non",LETTRES_MANQUANTES:"Lettres Manquantes",
+  MOT_MELANGE:"Mot Mélangé",REBUS_EMOJIS:"Rébus Emojis",LETTRE_UNIQUE:"Lettre Unique",DEVINE:"Devine",
+  COMPO_DRAPEAUX:"Compo Drapeaux",TU_PREFERES:"Tu Préfères",TROUVER_INTRUS:"Trouver l'Intrus"};
+
+const $ = s => document.querySelector(s);
+const color = v => v>=0.3 ? "var(--hi)" : v>=-0.2 ? "var(--mid)" : "var(--lo)";
+const pct = v => Math.max(4, Math.min(100, (v+2)/4*100));  // z-score ~[-2,2] -> [0,100]
+
+function card(it, rank){
+  const s = it.predicted_score ?? 0;
+  const fam = it.family ? `<span class="fam">${FAM[it.family]||it.family}</span>` : "";
+  return `<div class="card">
+    ${rank?`<div class="rank">#${rank}</div>`:""}
+    <div class="card-main"><h3>${esc(it.title)}</h3>
+      ${it.description?`<p class="desc">${esc(it.description)}</p>`:""}${fam}</div>
+    <div class="score"><div class="val" style="color:${color(s)}">${s>=0?"+":""}${s.toFixed(2)}</div>
+      <small>viralité</small><div class="bar"><i style="width:${pct(s)}%;background:${color(s)}"></i></div></div>
+  </div>`;
+}
+const esc = t => (t||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+async function health(){
+  try{
+    const h = await (await fetch(API+"/health")).json();
+    const sel = $("#category"); sel.innerHTML = h.categories.map(c=>`<option value="${c}">${CAT[c]||c}</option>`).join("");
+    $("#status").innerHTML = `<span class="dot on"></span> API en ligne · LLM ${h.llm?"connecté":"repli (mock)"}`;
+    if(!h.llm) banner("Mode démo : sans clé LLM, les idées sont générées en repli. Le scoring reste réel.");
+  }catch(e){ $("#status").innerHTML = `<span class="dot off"></span> API injoignable`; }
+}
+function banner(msg){ $("#banner").innerHTML = msg?`<div class="banner">${msg}</div>`:""; }
+
+async function loadToday(){
+  const cat = $("#category").value;
+  ["FR","EN"].forEach(l=>$("#today-"+l).innerHTML=`<div class="msg"><span class="spin"></span> chargement…</div>`);
+  try{
+    const d = await (await fetch(API+`/suggestions/today?category=${cat}`)).json();
+    ["FR","EN"].forEach(l=>{
+      const ideas = (d.menu&&d.menu[l])||[];
+      $("#today-"+l).innerHTML = ideas.length ? ideas.map((it,i)=>card(it,i+1)).join("") : `<div class="msg">Aucune idée.</div>`;
+    });
+  }catch(e){ ["FR","EN"].forEach(l=>$("#today-"+l).innerHTML=`<div class="msg">Erreur : ${e}</div>`); }
+}
+
+async function generate(){
+  const body = {category:$("#category").value, language:$("#language").value,
+                n:parseInt($("#count").value), theme:$("#theme").value||null};
+  $("#run").disabled=true;
+  $("#gen-list").innerHTML=`<div class="msg"><span class="spin"></span> génération…</div>`;
+  try{
+    const d = await (await fetch(API+"/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
+    const ideas = d.ideas||[];
+    $("#gen-list").innerHTML = ideas.length ? ideas.map((it,i)=>card(it,i+1)).join("") : `<div class="msg">Aucune idée générée.</div>`;
+  }catch(e){ $("#gen-list").innerHTML=`<div class="msg">Erreur : ${e}</div>`; }
+  $("#run").disabled=false;
+}
+
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav .tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); $("#"+b.dataset.tab).classList.add("active");
+});
+$("#loadToday").onclick = loadToday;
+$("#run").onclick = generate;
+health();
+</script>
+</body>
+</html>

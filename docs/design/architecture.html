@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz IA — Architecture des modules</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#30363d;
+    --txt:#e6edf3; --muted:#8b949e;
+    --data:#3fb950; --prep:#58a6ff; --model:#bc8cff; --orch:#f0883e;
+    --api:#ff7b72; --front:#39c5cf; --gold:#e3b341;
+    --shadow:0 6px 22px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 50% -10%,#15203099,#0d1117);
+    color:var(--txt); font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    line-height:1.5; padding:32px 18px 80px;
+  }
+  header{max-width:1100px;margin:0 auto 28px;text-align:center}
+  header h1{font-size:1.9rem;margin:0 0 6px;letter-spacing:.3px}
+  header h1 span{background:linear-gradient(90deg,var(--model),var(--front));-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{color:var(--muted);margin:4px 0;font-size:.95rem}
+  .wrap{max-width:1100px;margin:0 auto}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:18px 0 34px}
+  .legend span{display:inline-flex;align-items:center;gap:7px;font-size:.82rem;color:var(--muted)}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  /* layer */
+  .layer{position:relative;margin:0 0 8px;padding:22px;border:1px solid var(--line);
+    border-radius:16px;background:linear-gradient(180deg,#161b22,#12161d);box-shadow:var(--shadow)}
+  .layer-title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.78rem;
+    text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:0 0 16px}
+  .layer-title .bar{width:4px;height:18px;border-radius:3px}
+
+  .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+  .mod{flex:1 1 200px;min-width:190px;max-width:300px;background:var(--panel2);
+    border:1px solid var(--line);border-top:3px solid var(--line);border-radius:12px;
+    padding:14px 16px;transition:.18s;position:relative}
+  .mod:hover{transform:translateY(-3px);border-color:#3d4654;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .mod h3{margin:0 0 6px;font-size:1rem;display:flex;align-items:center;gap:8px}
+  .mod .ico{font-size:1.15rem}
+  .mod p{margin:0;font-size:.82rem;color:var(--muted)}
+  .mod .tech{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px}
+  .tech b{font-size:.68rem;font-weight:600;background:#0d1117;border:1px solid var(--line);
+    color:#adbac7;padding:2px 7px;border-radius:20px}
+
+  .t-data{border-top-color:var(--data)} .t-prep{border-top-color:var(--prep)}
+  .t-model{border-top-color:var(--model)} .t-orch{border-top-color:var(--orch)}
+  .t-api{border-top-color:var(--api)} .t-front{border-top-color:var(--front)}
+
+  /* arrow between layers */
+  .arrow{display:flex;justify-content:center;margin:-2px 0;color:var(--muted)}
+  .arrow svg{width:26px;height:34px}
+
+  /* branch labels */
+  .branch-tag{position:absolute;top:-11px;left:18px;font-size:.66rem;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;
+    background:var(--panel);border:1px solid var(--line)}
+
+  /* loop banners */
+  .loop{display:flex;gap:14px;flex-wrap:wrap;margin:30px 0 8px}
+  .loop-card{flex:1 1 300px;border-radius:14px;padding:16px 18px;border:1px solid var(--line)}
+  .loop-daily{background:linear-gradient(135deg,#0f2a1b,#12161d);border-color:#1f6f3e}
+  .loop-train{background:linear-gradient(135deg,#2a1f0f,#12161d);border-color:#8a5a1f}
+  .loop-card h3{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}
+  .loop-card .freq{font-size:.72rem;font-weight:700;letter-spacing:.5px;padding:2px 9px;border-radius:20px}
+  .loop-daily .freq{background:#16331f;color:var(--data);border:1px solid #1f6f3e}
+  .loop-train .freq{background:#33260f;color:var(--gold);border:1px solid #8a5a1f}
+  .loop-card ol{margin:10px 0 0;padding-left:18px;font-size:.82rem;color:var(--muted)}
+  .loop-card ol li{margin:3px 0}
+  .loop-card .cost{margin-top:10px;font-size:.78rem;color:var(--txt)}
+
+  .note{text-align:center;color:var(--muted);font-size:.82rem;margin:26px auto 0;max-width:760px}
+  .pill{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:#adbac7;margin:0 2px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quiz IA — <span>Architecture des modules</span></h1>
+  <p>Du jeu de données à l'intégration de l'API dans le frontend</p>
+  <p style="font-size:.8rem">Projet de fin d'étude · pipeline MLOps de génération + scoring d'idées de quiz vidéo virales bilingues (FR/EN)</p>
+</header>
+
+<div class="wrap">
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--data)"></i>Données</span>
+    <span><i class="dot" style="background:var(--prep)"></i>Préparation</span>
+    <span><i class="dot" style="background:var(--model)"></i>Modélisation</span>
+    <span><i class="dot" style="background:var(--orch)"></i>Orchestration</span>
+    <span><i class="dot" style="background:var(--api)"></i>API</span>
+    <span><i class="dot" style="background:var(--front)"></i>Frontend</span>
+  </div>
+
+  <!-- 1. SOURCES -->
+  <section class="layer">
+    <div class="layer-title"><i class="bar" style="background:var(--data)"></i>1 · Sources de données</div>
+    <div class="row">
+      <div class="mod t-data">
+        <h3><span class="ico">📺</span>Concurrents YouTube</h3>
+        <p>Collecte légale des métadonnées de vidéos concurrentes (titres, vues, durée, tags, dates…).</p>
+        <div class="tech"><b>YouTube Data API</b><b>collecte continue</b></div>
+      </div>
+      <div class="mod t-data">
+        <h3><span class="ico">🗂️</span>Corpus interne</h3>
+        <p>~50 quiz existants de la chaîne : matière première du style propriétaire.</p>
+        <div class="tech"><b>n ≈ 50</b><b>FR / EN</b></div>
+      </div>
+      <div class="mod t-data">
+        <h3><span class="ico">🌐</span>Base factuelle</h3>
+        <p>Connaissances externes pour le RAG : logos, films, drapeaux, culture FR/EN.</p>
+        <div class="tech"><b>knowledge base</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- 2. INGESTION -->
+  <section class="layer">
+    <div class="layer-title"><i class="bar" style="background:var(--prep)"></i>2 · Ingestion & stockage</div>
+    <div class="row">
+      <div class="mod t-prep">
+        <h3><span class="ico">⬇️</span>Module d'ingestion</h3>
+        <p>Scripts de collecte planifiés, normalisation et dédoublonnage des entrées.</p>
+        <div class="tech"><b>Python</b><b>requests</b></div>
+      </div>
+      <div class="mod t-prep">
+        <h3><span class="ico">💾</span>Stockage versionné</h3>
+        <p>Données brutes puis nettoyées, traçables et reproductibles.</p>
+        <div class="tech"><b>data/raw</b><b>data/processed</b><b>DVC</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- 3. PREP -->
+  <section class="layer">
+    <div class="layer-title"><i class="bar" style="background:var(--prep)"></i>3 · Préparation des données</div>
+    <div class="row">
+      <div class="mod t-prep">
+        <h3><span class="ico">🔍</span>Exploration (EDA)</h3>
+        <p>Structure, biais, valeurs manquantes, distributions, outliers, corrélations.</p>
+        <div class="tech"><b>pandas</b><b>matplotlib</b><b>seaborn</b></div>
+      </div>
+      <div class="mod t-prep">
+        <h3><span class="ico">🧱</span>Feature engineering</h3>
+        <p>Construction des features de viralité à partir des métadonnées.</p>
+        <div class="tech"><b>scaling</b><b>encoding</b></div>
+      </div>
+      <div class="mod t-prep">
+        <h3><span class="ico">✨</span>Indexation RAG</h3>
+        <p>Corpus interne + base factuelle découpés et encodés en embeddings pour la base vectorielle.</p>
+        <div class="tech"><b>sentence-transformers</b><b>chunking</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- 4. MODELS -->
+  <section class="layer">
+    <div class="layer-title"><i class="bar" style="background:var(--model)"></i>4 · Modélisation — deux modèles couplés</div>
+    <div class="row">
+      <div class="mod t-model" style="max-width:430px;flex:1 1 380px">
+        <span class="branch-tag" style="color:var(--model)">Branche A · Générateur</span>
+        <h3 style="margin-top:6px"><span class="ico">🧠</span>RAG — idées de quiz</h3>
+        <p>Récupération sémantique (embeddings + base vectorielle) du style et des faits, injectés dans le prompt d'un LLM. Produit ~20 idées candidates FR/EN ancrées.</p>
+        <div class="tech"><b>embeddings</b><b>FAISS/Chroma</b><b>RAG</b><b>LLM</b></div>
+      </div>
+      <div class="mod t-model" style="max-width:430px;flex:1 1 380px">
+        <span class="branch-tag" style="color:var(--model)">Branche B · Scoring</span>
+        <h3 style="margin-top:6px"><span class="ico">📈</span>Scoring viral</h3>
+        <p>Modèle tabulaire entraîné sur les performances réelles des concurrents. Attribue un score de viralité prédit à chaque idée candidate.</p>
+        <div class="tech"><b>LightGBM</b><b>GridSearch / CV</b><b>SHAP</b><b>Spearman</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- 5. ORCHESTRATION + LOOPS -->
+  <section class="layer">
+    <div class="layer-title"><i class="bar" style="background:var(--orch)"></i>5 · Orchestration — la pipeline se boucle</div>
+    <div class="row">
+      <div class="mod t-orch">
+        <h3><span class="ico">🔁</span>Génération du menu</h3>
+        <p>Génère les candidats → score → sélectionne le top 10 (5 FR + 5 EN) classé par viralité.</p>
+        <div class="tech"><b>top-10</b><b>ranking</b></div>
+      </div>
+      <div class="mod t-orch">
+        <h3><span class="ico">⏰</span>Planificateur</h3>
+        <p>Déclenche la pipeline chaque matin, sans intervention humaine.</p>
+        <div class="tech"><b>GitHub Actions</b><b>cron</b><b>Modal</b></div>
+      </div>
+      <div class="mod t-orch">
+        <h3><span class="ico">📡</span>Monitoring de dérive</h3>
+        <p>Surveille l'évolution des tendances et déclenche le ré-entraînement si besoin.</p>
+        <div class="tech"><b>drift</b><b>alerting</b></div>
+      </div>
+    </div>
+
+    <div class="loop">
+      <div class="loop-card loop-daily">
+        <h3>🟢 Boucle quotidienne <span class="freq">CHAQUE MATIN · ~0 €</span></h3>
+        <p style="margin:6px 0 0;color:var(--muted);font-size:.82rem">Inférence seule — aucun ré-entraînement.</p>
+        <ol>
+          <li>Ingestion des dernières vidéos concurrentes</li>
+          <li>Rafraîchissement des features de tendance</li>
+          <li>Génération des idées (LLM + RAG)</li>
+          <li>Scoring & classement (LightGBM)</li>
+          <li>Publication du « menu du jour » via l'API</li>
+        </ol>
+        <div class="cost">→ Scoring CPU = 0 € · génération serverless = quelques cents/jour</div>
+      </div>
+      <div class="loop-card loop-train">
+        <h3>🟠 Boucle de mise à jour <span class="freq">HEBDO / MENSUEL · CPU</span></h3>
+        <p style="margin:6px 0 0;color:var(--muted);font-size:.82rem">Déclenchée à la demande ou sur dérive.</p>
+        <ol>
+          <li>Ré-entraînement du scoring sur nouvelles perfs (LightGBM, CPU)</li>
+          <li>Ré-indexation du corpus RAG (nouveaux docs)</li>
+          <li>Évaluation vs benchmark</li>
+          <li>Versionnage du nouveau modèle / index</li>
+        </ol>
+        <div class="cost">→ Pas de GPU : réentraînement CPU + ré-indexation ≈ gratuit</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- 6. API -->
+  <section class="layer">
+    <div class="layer-title"><i class="bar" style="background:var(--api)"></i>6 · API (point d'intégration)</div>
+    <div class="row">
+      <div class="mod t-api">
+        <h3><span class="ico">🚀</span>Service API</h3>
+        <p>Expose le menu du jour et la génération à la demande. Charge les modèles pré-entraînés (jamais de ré-entraînement live).</p>
+        <div class="tech"><b>FastAPI</b><b>modèles chargés</b></div>
+      </div>
+      <div class="mod t-api">
+        <h3><span class="ico">🔑</span>Endpoints</h3>
+        <p style="margin-bottom:8px"><code style="font-size:.76rem">GET /suggestions/today</code> · <code style="font-size:.76rem">POST /generate</code> · <code style="font-size:.76rem">POST /score</code></p>
+        <div class="tech"><b>JSON</b><b>auth</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 26 34"><path d="M13 0v26M5 19l8 8 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+
+  <!-- 7. FRONTEND -->
+  <section class="layer" style="border-color:#1f5d63;background:linear-gradient(180deg,#0f2329,#12161d)">
+    <div class="layer-title"><i class="bar" style="background:var(--front)"></i>7 · Frontend — intégration de l'API</div>
+    <div class="row">
+      <div class="mod t-front">
+        <h3><span class="ico">🖥️</span>App de génération de quiz</h3>
+        <p>Appelle <code style="font-size:.76rem">/suggestions/today</code> et affiche les 10 idées du jour. Transformation en vidéo en un clic.</p>
+        <div class="tech"><b>fetch API</b><b>menu du jour</b></div>
+      </div>
+      <div class="mod t-front">
+        <h3><span class="ico">📊</span>Démo Streamlit (PoC)</h3>
+        <p>Onglets : Suggestions du jour · Génération à la demande · Explication du score (SHAP) · DataViz.</p>
+        <div class="tech"><b>Streamlit</b><b>multi-onglets</b></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="note">
+    Le frontend ne consomme que des résultats <b>pré-calculés et servis par l'API</b> :
+    affichage instantané, aucun ré-entraînement côté client.
+    <span class="pill">conforme à la consigne soutenance</span>
+  </p>
+
+</div>
+</body>
+</html>

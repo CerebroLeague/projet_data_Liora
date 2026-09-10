@@ -1,0 +1,64 @@
+{
+  "info": {
+    "name": "Quiz IA — API",
+    "description": "Collection de test de l'API d'inférence (génération RAG + scoring viral).\nVariable {{base_url}} = http://127.0.0.1:8000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" }
+  ],
+  "item": [
+    {
+      "name": "1. Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] },
+        "description": "État du service : modèles chargés, LLM disponible, taxonomie."
+      }
+    },
+    {
+      "name": "2. Suggestions du jour",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/suggestions/today?category=QUIZ_KPOP&n=5",
+          "host": ["{{base_url}}"],
+          "path": ["suggestions", "today"],
+          "query": [
+            { "key": "category", "value": "QUIZ_KPOP" },
+            { "key": "n", "value": "5" }
+          ]
+        },
+        "description": "Menu du jour pré-calculé (5 FR + 5 EN classées par viralité prédite).\nCatégories : QUIZ_FOOT, QUIZ_BASKET, QUIZ_KPOP, QUIZ_OTAKU, QUIZ_GLOBAL, QUIZ_DATAWORLD, QUIZ_RELIGION."
+      }
+    },
+    {
+      "name": "3. Générer des idées (RAG)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category\": \"QUIZ_FOOT\",\n  \"language\": \"FR\",\n  \"n\": 5,\n  \"theme\": null\n}"
+        },
+        "url": { "raw": "{{base_url}}/generate", "host": ["{{base_url}}"], "path": ["generate"] },
+        "description": "Génère n idées pour une catégorie × langue. Sans LLM_API_KEY -> mode mock (idées issues du RAG, scoring réel). Champ 'llm_used' = true si le vrai LLM a répondu."
+      }
+    },
+    {
+      "name": "4. Scorer des idées",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category\": \"QUIZ_KPOP\",\n  \"language\": \"EN\",\n  \"ideas\": [\n    { \"title\": \"Guess the KPOP idol from one emoji\", \"family\": \"REBUS_EMOJIS\" },\n    { \"title\": \"True or False: BTS world records\", \"family\": \"VRAI_FAUX\" }\n  ]\n}"
+        },
+        "url": { "raw": "{{base_url}}/score", "host": ["{{base_url}}"], "path": ["score"] },
+        "description": "Score des idées fournies (titre + famille) avec le modèle LightGBM. Retourne les idées triées par predicted_score décroissant."
+      }
+    }
+  ]
+}
