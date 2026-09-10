@@ -1,5 +1,10 @@
 # Secrets
+# Tout fichier d'environnement est exclu par défaut...
 .env
+.env.*
+# ...sauf les gabarits sans clé, qui doivent rester versionnés.
+!.env.example
+!.env.dev
 
 # Python
 __pycache__/
