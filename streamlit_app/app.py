@@ -32,6 +32,26 @@ st.set_page_config(page_title="Quiz IA — Studio", page_icon="🎬", layout="wi
 FIG = ROOT / "reports" / "figures"
 REPORTS = ROOT / "reports"
 
+# ── Charte graphique « Liora » (fond blanc · titres Lora serif · accent orange) ──
+st.markdown(
+    """
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&family=Lora:wght@500;600;700&display=swap');
+      html, body, [class*="css"], .stMarkdown, p, span, label, li { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
+      h1,h2,h3,h4,h5 { font-family:'Lora',Georgia,serif !important; color:#1a1a1a !important; letter-spacing:-.01em; }
+      .liora-mark { font-family:'Lora',serif; font-weight:700; color:#d9480f; font-size:1.35rem; margin:0 0 -.2rem; }
+      .liora-mark sup { font-size:.5rem; vertical-align:super; font-weight:500; }
+      .liora-note { font-size:.86rem; padding:11px 15px; border-radius:6px; margin:.4rem 0 .2rem; }
+      .liora-note.ok   { background:#ebfbee; border:1px solid #c3e6cb; color:#2b6b34; }
+      .liora-note.warn { background:#fff4e6; border:1px solid #ffe0bf; color:#8a4b12; }
+      .stButton>button[kind="primary"] { border-radius:6px; font-weight:600; }
+      div[data-testid="stMetricValue"] { font-family:'Lora',serif; color:#d9480f; }
+      hr { border-color:#e6e4e1; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ── chargement unique (pas de ré-entraînement) ─────────────────
 @st.cache_resource(show_spinner="Chargement des modèles…")
@@ -51,7 +71,7 @@ USING_LLM = llm_client is not None
 
 
 def score_color(s: float) -> str:
-    return "#3fb950" if s >= 0.3 else "#e3b341" if s >= -0.2 else "#ff7b72"
+    return "#2f9e44" if s >= 0.3 else "#e8590c" if s >= -0.2 else "#e03131"
 
 
 def render_ideas(ideas: list[dict]):
@@ -71,12 +91,15 @@ def render_ideas(ideas: list[dict]):
 
 
 # ── En-tête ────────────────────────────────────────────────────
-st.title("🎬 Quiz IA — Studio")
-st.caption("Génération & scoring d'idées de quiz vidéo virales bilingues (FR/EN) — démo PoC")
-st.info(
-    ("🟢 LLM connecté — génération réelle" if USING_LLM
-     else "🟡 Mode démo (sans clé LLM) : idées générées en *mock* à partir du RAG ; le scoring est réel."),
-    icon="ℹ️")
+st.markdown('<p class="liora-mark">Liora<sup>®</sup></p>', unsafe_allow_html=True)
+st.title("Quiz IA — Studio")
+st.caption("Génération et scoring d'idées de quiz vidéo virales bilingues (FR/EN) — démonstration")
+if USING_LLM:
+    st.markdown('<div class="liora-note ok">LLM connecté — génération réelle.</div>', unsafe_allow_html=True)
+else:
+    st.markdown(
+        '<div class="liora-note warn">Mode démo (sans clé LLM) : les idées sont générées en repli à '
+        'partir du RAG ; le scoring, lui, reste réel.</div>', unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4 = st.tabs(
     ["📅 Suggestions du jour", "✨ Génération à la demande", "📈 Explication du score", "📊 DataViz"])
